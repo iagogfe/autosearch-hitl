@@ -1,6 +1,12 @@
 # Changelog
 
 All notable changes to this project are documented here.
+## 0.1.2 — 2026-06-30
+
+### Miscellaneous
+
+- Remove routing eval from repo (keep internal only)
+
 ## 0.1.1 — 2026-06-30
 
 ### Bug Fixes
