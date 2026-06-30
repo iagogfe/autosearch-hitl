@@ -1,0 +1,55 @@
+name: ci
+
+# Validação leve em PRs e no master: confere que cada SKILL.md tem frontmatter
+# válido (name + description).
+#
+# Segurança (importante para repo público):
+# - Usa `pull_request` (NUNCA `pull_request_target`), então PRs de fork rodam com
+#   GITHUB_TOKEN read-only e SEM secrets — mesmo lendo o código do PR.
+# - Permissões read-only e nenhum secret usado.
+# - O passo apenas LÊ/parseia arquivos; não executa código do PR.
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate-skills:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+
+      - name: Validar frontmatter dos SKILL.md
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          import glob, sys
+          fail = False
+          files = glob.glob("skills/**/SKILL.md", recursive=True)
+          if not files:
+              print("::error::nenhum SKILL.md encontrado em skills/")
+              sys.exit(1)
+          for f in files:
+              text = open(f, encoding="utf-8").read()
+              if not text.startswith("---"):
+                  print(f"::error file={f}::sem frontmatter YAML (deve começar com ---)")
+                  fail = True
+                  continue
+              end = text.find("\n---", 3)
+              fm = text[3:end] if end != -1 else ""
+              for key in ("name:", "description:"):
+                  if key not in fm:
+                      print(f"::error file={f}::frontmatter sem '{key}'")
+                      fail = True
+              print(f"ok: {f}")
+          sys.exit(1 if fail else 0)
+          PY

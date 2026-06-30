@@ -1,0 +1,7 @@
+# scratch do superpowers (SDD ledger, briefs, reports)
+.superpowers/
+
+# temporários
+*.log
+.DS_Store
+*.zip

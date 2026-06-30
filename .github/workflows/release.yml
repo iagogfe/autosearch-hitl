@@ -1,0 +1,102 @@
+name: release
+
+# Gera release notes + CHANGELOG automaticamente a cada push no master,
+# usando git-cliff (conventional commits). Só cria release quando há commits
+# que justificam um bump de versão (evita releases vazias).
+#
+# Segurança:
+# - Só dispara em push no master (nunca em pull_request de fork), então código
+#   não confiável nunca roda com o token de escrita.
+# - Permissões mínimas (contents: write), escopadas por job.
+# - Actions de terceiros pinadas por commit SHA (anti tag-move supply-chain).
+# - Binário do git-cliff verificado por checksum SHA-256.
+# - Versão é passada via env (sem interpolar input no shell).
+
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - CHANGELOG.md
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout (histórico completo + tags)
+        uses: actions/checkout@93cb6efe18208431cddfb8368fd83d5badbf9bfd # v5
+        with:
+          fetch-depth: 0
+
+      - name: Instalar git-cliff (com verificação de checksum)
+        env:
+          GC_VERSION: "2.6.1"
+          GC_SHA256: "ab55076a8822f9689f7d7715127406f1a83743490a3dd883c6998200026491e5"
+        run: |
+          set -euo pipefail
+          file="git-cliff-${GC_VERSION}-x86_64-unknown-linux-gnu.tar.gz"
+          curl -sSL -o "$file" "https://github.com/orhun/git-cliff/releases/download/v${GC_VERSION}/${file}"
+          echo "${GC_SHA256}  ${file}" | sha256sum -c -
+          tar xzf "$file"
+          sudo mv "git-cliff-${GC_VERSION}/git-cliff" /usr/local/bin/git-cliff
+          git-cliff --version
+
+      - name: Calcular próxima versão
+        id: ver
+        run: |
+          set -euo pipefail
+          NEXT="$(git-cliff --bumped-version 2>/dev/null || true)"
+          LATEST="$(git describe --tags --abbrev=0 2>/dev/null || true)"
+          # primeira release (sem nenhuma tag) é sempre v0.1.0
+          if [ -z "$LATEST" ]; then NEXT="v0.1.0"; fi
+          case "$NEXT" in v*) ;; "" ) ;; *) NEXT="v$NEXT";; esac
+          echo "next=$NEXT"     >> "$GITHUB_OUTPUT"
+          echo "latest=$LATEST" >> "$GITHUB_OUTPUT"
+          if [ -z "$NEXT" ] || [ "$NEXT" = "$LATEST" ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "Sem bump de versão — nada a lançar."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "Próxima versão: $NEXT (anterior: ${LATEST:-nenhuma})"
+          fi
+
+      - name: Gerar CHANGELOG e corpo da release
+        if: steps.ver.outputs.release == 'true'
+        env:
+          NEXT: ${{ steps.ver.outputs.next }}
+        run: |
+          set -euo pipefail
+          git-cliff --tag "$NEXT" -o CHANGELOG.md
+          git-cliff --tag "$NEXT" --unreleased --strip header -o RELEASE_NOTES.md
+          echo "----- RELEASE_NOTES.md -----"; cat RELEASE_NOTES.md
+
+      - name: Commit do CHANGELOG + tag
+        if: steps.ver.outputs.release == 'true'
+        env:
+          NEXT: ${{ steps.ver.outputs.next }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add CHANGELOG.md
+          git commit -m "chore(release): $NEXT [skip ci]" || echo "CHANGELOG sem mudanças"
+          git tag -a "$NEXT" -m "release $NEXT"
+          git push origin HEAD:master
+          git push origin "$NEXT"
+
+      - name: Criar GitHub Release
+        if: steps.ver.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NEXT: ${{ steps.ver.outputs.next }}
+        run: |
+          set -euo pipefail
+          gh release create "$NEXT" --title "$NEXT" --notes-file RELEASE_NOTES.md
