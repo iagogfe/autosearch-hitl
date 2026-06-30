@@ -7,9 +7,10 @@
 **Autonomous optimization with a human in the loop:**
 you define what "better" means, and the skill iterates on its own — *change → measure → keep/discard* — safely, and knows when to stop.
 
-![license](https://img.shields.io/badge/license-MIT-green)
-![type](https://img.shields.io/badge/type-agent%20skill-blue)
-![works%20with](https://img.shields.io/badge/works%20with-Claude%20Code%20%7C%20Codex%20%7C%20compatible%20agents-purple)
+![license](https://img.shields.io/github/license/iagogfe/autosearch-hitl)
+![release](https://img.shields.io/github/v/release/iagogfe/autosearch-hitl)
+![CI](https://img.shields.io/github/actions/workflow/status/iagogfe/autosearch-hitl/ci.yml?branch=master&label=CI)
+![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen)
 [![skills.sh](https://img.shields.io/badge/skills.sh-install-111111)](https://www.skills.sh/iagogfe/autosearch-hitl)
 
 </div>
