@@ -61,6 +61,10 @@ missing and why.
   the presence of **`program.md` at the root together with `train.py` and
   `prepare.py`** — AND an NVIDIA GPU is available → read and follow **`layer-llm.md`**.
   (If `program.md` doesn't exist, even with `train.py`/`prepare.py`, use the general engine.)
+- The artifact produces **text whose quality has no existing number** (a prompt, a reply
+  template) AND `JEV_TOKEN` is set → read and follow **`layer-jev.md`**, which builds the
+  metric from a typed judge and then uses the general engine. Without `JEV_TOKEN`, use
+  the general engine and help create the measurement there.
 - Satisfies the 4 pre-conditions in **any other domain** → read and follow
   **`engine-general.md`**.
 - Doesn't satisfy → refuse as in Step 2.
