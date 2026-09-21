@@ -12,7 +12,7 @@ docs/                    # design spec, implementation plan, executive summary
 ```
 
 The main skill lives in `skills/autosearch-hitl/` (`SKILL.md` router +
-`layer-llm.md` + `engine-general.md`).
+`layer-llm.md` + `layer-jev.md` + `engine-general.md`).
 
 ## Development setup
 
