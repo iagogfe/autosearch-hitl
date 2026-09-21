@@ -1,6 +1,12 @@
 # Changelog
 
 All notable changes to this project are documented here.
+## 0.2.0 — 2026-09-21
+
+### Features
+
+- Add Jev judge layer for text-quality goals
+
 ## 0.1.2 — 2026-06-30
 
 ### Miscellaneous
